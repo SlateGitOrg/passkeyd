@@ -120,7 +120,7 @@ func Run(ctx context.Context, w io.Writer, opts Options) (Summary, error) {
 	anchors.AddCert(root)
 
 	rp, err := webauthn.New(webauthn.Config{
-		RPID: rpID, RPName: "passkeyd demo", Origins: []string{origin},
+		RPID: rpID, RPName: "passkeyd demo", Origins: []string{origin}, ResidentKey: webauthn.ResidentKeyRequired,
 		Attestation: &webauthn.AttestationPolicy{AllowNone: true, AllowSelf: true, AllowBasic: true, TrustAnchors: anchors},
 		Now:         r.clk.Now,
 	})

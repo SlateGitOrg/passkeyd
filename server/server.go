@@ -75,6 +75,11 @@ func New(cfg Config) (*Server, error) {
 	if cfg.RP == nil || cfg.Store == nil {
 		return nil, errors.New("server: RP and Store are required")
 	}
+	// Login options never list credentials (see loginOptions), so every
+	// credential must be discoverable or its owner could not sign in.
+	if rk := cfg.RP.Config().ResidentKey; rk != webauthn.ResidentKeyRequired {
+		return nil, fmt.Errorf("server: RP must set ResidentKey %q (got %q)", webauthn.ResidentKeyRequired, rk)
+	}
 	if cfg.Logger == nil {
 		cfg.Logger = slog.New(slog.DiscardHandler)
 	}
@@ -267,28 +272,32 @@ func (s *Server) loginOptions(w http.ResponseWriter, r *http.Request) {
 	if !decode(w, r, &req) {
 		return
 	}
-	var (
-		handle []byte
-		allow  []webauthn.Credential
-	)
+	// The options never list credentials (allowCredentials is always
+	// empty), so the response is the same whether or not the username
+	// exists and hands out no credential IDs. The username is bound on the
+	// server side instead: the session carries the account's user handle,
+	// and FinishLogin rejects an assertion from any credential that account
+	// does not own. An unknown username is bound to a fresh random handle
+	// that owns nothing, so it fails the same check as somebody else's
+	// passkey. This relies on discoverable credentials, which New enforces.
+	var handle []byte
 	if req.Username != "" {
 		u, err := s.store.UserByName(r.Context(), req.Username)
 		switch {
 		case err == nil:
-			if allow, err = s.store.CredentialsByUser(r.Context(), u.Handle); err != nil {
-				s.internal(w, "list credentials", err)
-				return
-			}
 			handle = u.Handle
 		case errors.Is(err, credstore.ErrNotFound):
-			// Answer exactly like a discoverable login so the response does
-			// not reveal whether the account exists.
+			handle = make([]byte, 32)
+			if _, err := s.randRead(handle); err != nil {
+				s.internal(w, "user handle", err)
+				return
+			}
 		default:
 			s.internal(w, "user lookup", err)
 			return
 		}
 	}
-	opts, sess, err := s.rp.BeginLogin(handle, allow)
+	opts, sess, err := s.rp.BeginLogin(handle, nil)
 	if err != nil {
 		s.internal(w, "begin login", err)
 		return

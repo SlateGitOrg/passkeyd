@@ -213,6 +213,7 @@ func buildRP(c *serveConfig, logger *slog.Logger) (*webauthn.RelyingParty, bool,
 			TrustAnchors: anchors, RequireTrusted: c.requireTrusted,
 		},
 		RejectBackupEligible: c.deviceBound,
+		ResidentKey:          webauthn.ResidentKeyRequired,
 		ClonePolicy:          clone,
 		Logger:               logger,
 	})

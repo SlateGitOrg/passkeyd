@@ -5,12 +5,14 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
 	"net/http/cookiejar"
 	"net/http/httptest"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -51,7 +53,7 @@ func newEnv(t *testing.T, mod func(*Config)) *env {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = store.Close() })
-	rp, err := webauthn.New(webauthn.Config{RPID: "localhost", Origins: []string{testOrigin}, Now: clk.Now})
+	rp, err := webauthn.New(webauthn.Config{RPID: "localhost", Origins: []string{testOrigin}, ResidentKey: webauthn.ResidentKeyRequired, Now: clk.Now})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -239,15 +241,81 @@ func TestVerificationFailuresMapToChecks(t *testing.T) {
 	if st, _ := b.register("mallory"); st != http.StatusOK {
 		t.Fatal("a failed ceremony must not reserve the username")
 	}
-	// Unknown user: the options look like a discoverable login.
 	var opts webauthn.RequestOptionsJSON
-	if st := b.postInto("/api/login/options", map[string]string{"username": "nobody"}, &opts); st != 200 || len(opts.AllowCredentials) != 0 {
-		t.Fatalf("unknown user options %d %+v", st, opts)
+	if st := b.postInto("/api/login/options", map[string]string{"username": "mallory"}, &opts); st != 200 {
+		t.Fatalf("options %d", st)
 	}
 	resp, _ := b.client.Get(&opts)
 	resp.Response.Signature[len(resp.Response.Signature)-1] ^= 1
 	if st, body := b.post("/api/login/verify", resp); st != http.StatusUnauthorized || body["error"] != string(webauthn.CheckSignature) {
 		t.Fatalf("got %d %v", st, body)
+	}
+}
+
+// TestLoginDoesNotEnumerateAccounts covers threat T17: login options for an
+// existing and an unknown username are indistinguishable and carry no
+// credential IDs, and the username is still enforced at verification.
+func TestLoginDoesNotEnumerateAccounts(t *testing.T) {
+	e := newEnv(t, nil)
+	alice := e.browser(virtualauthn.Options{})
+	if st, _ := alice.register("alice"); st != http.StatusOK {
+		t.Fatal(st)
+	}
+	mallory := e.browser(virtualauthn.Options{})
+	if st, _ := mallory.register("mallory"); st != http.StatusOK {
+		t.Fatal(st)
+	}
+	shape := func(name string) (map[string]any, []string) {
+		t.Helper()
+		st, body := mallory.post("/api/login/options", map[string]string{"username": name})
+		if st != http.StatusOK {
+			t.Fatalf("%q options: %d %v", name, st, body)
+		}
+		if allow, _ := body["allowCredentials"].([]any); len(allow) != 0 {
+			t.Fatalf("%q options list credentials: %v", name, allow)
+		}
+		delete(body, "challenge")
+		keys := make([]string, 0, len(body))
+		for k := range body {
+			keys = append(keys, k)
+		}
+		slices.Sort(keys)
+		return body, keys
+	}
+	known, knownKeys := shape("alice")
+	unknown, unknownKeys := shape("nobody")
+	if !slices.Equal(knownKeys, unknownKeys) || fmt.Sprint(known) != fmt.Sprint(unknown) {
+		t.Fatalf("options differ:\nknown   %v\nunknown %v", known, unknown)
+	}
+
+	// The username is bound server-side: mallory's own valid passkey is
+	// refused for alice and for a name that does not exist, with the same
+	// error, while alice's passkey is accepted for alice.
+	for _, name := range []string{"alice", "nobody"} {
+		if st, body := mallory.login(name); st != http.StatusUnauthorized || body["error"] != string(webauthn.CheckUserHandle) {
+			t.Fatalf("mallory as %q: %d %v", name, st, body)
+		}
+	}
+	if st, body := alice.login("alice"); st != http.StatusOK || body["username"] != "alice" {
+		t.Fatalf("alice: %d %v", st, body)
+	}
+	if st, body := mallory.login("mallory"); st != http.StatusOK || body["username"] != "mallory" {
+		t.Fatalf("mallory: %d %v", st, body)
+	}
+}
+
+func TestNewRequiresDiscoverableCredentials(t *testing.T) {
+	store, err := credstore.Open(context.Background(), filepath.Join(t.TempDir(), "s.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = store.Close() })
+	rp, err := webauthn.New(webauthn.Config{RPID: "localhost", Origins: []string{testOrigin}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := New(Config{RP: rp, Store: store}); err == nil || !strings.Contains(err.Error(), "ResidentKey") {
+		t.Fatalf("want ResidentKey error, got %v", err)
 	}
 }
 
@@ -341,6 +409,9 @@ func TestRandomnessFailure(t *testing.T) {
 	e.srv.randRead = func([]byte) (int, error) { return 0, errors.New("no entropy") }
 	b := e.browser(virtualauthn.Options{})
 	if st, _ := b.post("/api/register/options", map[string]string{"username": "x"}); st != 500 {
+		t.Fatal(st)
+	}
+	if st, _ := b.post("/api/login/options", map[string]string{"username": "nobody"}); st != 500 {
 		t.Fatal(st)
 	}
 }
