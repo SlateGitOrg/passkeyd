@@ -222,6 +222,7 @@ func Run(ctx context.Context, w io.Writer, opts Options) (Summary, error) {
 				name, c.Algorithm, c.AttestationType, c.SignCount, c.BackupEligible, c.CloneWarning)
 		}
 	}
+	_ = r.out.Flush()
 	aliceUser, _ := store.UserByName(ctx, "alice")
 	aliceCreds, _ := store.CredentialsByUser(ctx, aliceUser.Handle)
 	r.record(len(aliceCreds) == 1 && aliceCreds[0].CloneWarning, "flagged", "clone detection persisted", "alice's credential carries clone_warning=1")
@@ -346,9 +347,9 @@ func (e *apiError) Error() string { return fmt.Sprintf("HTTP %d %s: %s", e.Statu
 
 // user is one browser: a cookie jar plus a virtual client.
 type user struct {
-	r           *runner
-	hc          *http.Client
-	client      *virtualauthn.Client
+	r          *runner
+	hc         *http.Client
+	client     *virtualauthn.Client
 	rpOverride string
 }
 
