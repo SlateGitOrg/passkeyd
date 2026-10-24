@@ -19,15 +19,21 @@ type specVectors struct {
 	} `json:"vectors"`
 }
 
-func loadSpecVectors(t *testing.T) specVectors {
-	t.Helper()
+func readSpecVectors() (specVectors, error) {
+	var v specVectors
 	raw, err := os.ReadFile("../testdata/webauthn-l3-vectors.json")
 	if err != nil {
-		t.Fatal(err)
+		return v, err
 	}
-	var v specVectors
-	if err := json.Unmarshal(raw, &v); err != nil {
-		t.Fatal(err)
+	err = json.Unmarshal(raw, &v)
+	return v, err
+}
+
+func loadSpecVectors(tb testing.TB) specVectors {
+	tb.Helper()
+	v, err := readSpecVectors()
+	if err != nil {
+		tb.Fatal(err)
 	}
 	return v
 }
