@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>passkeyd demo</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>passkeyd</h1>
+      <p>A WebAuthn relying party. Register a passkey, then sign in with it.
+         Everything below talks to the local server's JSON API.</p>
+      <p id="support" class="note" role="status"></p>
+    </header>
+
+    <section aria-labelledby="reg-title">
+      <h2 id="reg-title">1. Create an account</h2>
+      <form id="register-form">
+        <label for="reg-username">Username</label>
+        <input id="reg-username" name="username" autocomplete="username webauthn" required maxlength="64">
+        <label for="reg-display">Display name (optional)</label>
+        <input id="reg-display" name="displayName" maxlength="64">
+        <button type="submit">Register passkey</button>
+      </form>
+    </section>
+
+    <section aria-labelledby="login-title">
+      <h2 id="login-title">2. Sign in</h2>
+      <form id="login-form">
+        <label for="login-username">Username (leave empty to pick a passkey)</label>
+        <input id="login-username" name="username" autocomplete="username webauthn" maxlength="64">
+        <button type="submit">Sign in with passkey</button>
+      </form>
+    </section>
+
+    <section aria-labelledby="log-title">
+      <h2 id="log-title">Server responses</h2>
+      <ol id="log" aria-live="polite"></ol>
+    </section>
+  </main>
+</body>
+</html>

@@ -1,0 +1,16 @@
+:root { color-scheme: light dark; --accent: #2b6cb0; --ok: #2f855a; --bad: #c53030; }
+* { box-sizing: border-box; }
+body { margin: 0; font: 16px/1.5 system-ui, sans-serif; }
+main { max-width: 42rem; margin: 0 auto; padding: 1.5rem 1rem 4rem; }
+h1 { margin-bottom: 0.25rem; }
+h2 { font-size: 1.15rem; margin-top: 2rem; }
+form { display: grid; gap: 0.5rem; }
+input { font: inherit; padding: 0.5rem; border: 1px solid #888; border-radius: 4px; }
+button { font: inherit; padding: 0.6rem 1rem; border: 0; border-radius: 4px; background: var(--accent); color: #fff; cursor: pointer; justify-self: start; }
+button:disabled { opacity: 0.6; cursor: progress; }
+.note { font-size: 0.9rem; opacity: 0.8; }
+#log { padding-left: 1.25rem; }
+#log li { margin-bottom: 0.75rem; }
+#log .ok { color: var(--ok); }
+#log .bad { color: var(--bad); }
+pre { white-space: pre-wrap; word-break: break-all; font-size: 0.8rem; margin: 0.25rem 0 0; }
