@@ -185,6 +185,12 @@ security headers, then the router. The routes are:
 - `POST /api/{register,login}/verify`: JSON content type required.
 - `GET /api/health`.
 
+Login options never list credentials, whatever username is sent, so the
+response does not reveal whether an account exists. A supplied username is
+bound through the session's user handle (a random one for an unknown name),
+and step 5 of the authentication checks above rejects any credential that
+handle does not own. The server therefore requires `ResidentKey: required`.
+
 Bodies are capped at 64 KiB and must contain exactly one JSON value. The
 ceremony cookie is HttpOnly, SameSite=Strict, scoped to `Path=/api/`, and
 uses a relative `MaxAge`. It is Secure whenever an https origin is configured.
