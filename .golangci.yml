@@ -1,0 +1,47 @@
+version: "2"
+
+run:
+  timeout: 5m
+
+linters:
+  default: standard # errcheck, govet, ineffassign, staticcheck, unused
+  enable:
+    - bodyclose
+    - copyloopvar
+    - errorlint
+    - gocritic
+    - gosec
+    - misspell
+    - nilerr
+    - revive
+    - unconvert
+    - unparam
+  settings:
+    revive:
+      rules:
+        - name: exported
+        - name: package-comments
+        - name: var-naming
+        - name: indent-error-flow
+        - name: errorf
+        - name: error-strings
+        - name: receiver-naming
+        - name: unused-parameter
+          disabled: true
+  exclusions:
+    presets:
+      - common-false-positives
+      - std-error-handling
+    rules:
+      # Tests deliberately build hostile inputs and use throwaway files.
+      - path: _test\.go
+        linters: [gosec, unparam]
+      # Check names like "credential_id_length" are error codes, not secrets.
+      - path: webauthn/errors\.go
+        linters: [gosec]
+        text: G101
+
+formatters:
+  enable:
+    - gofmt
+    - goimports

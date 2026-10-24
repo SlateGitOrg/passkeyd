@@ -273,11 +273,13 @@ func (d *decoder) str(start int, major byte, n uint64, indef bool) (Value, error
 }
 
 func (d *decoder) take(start int, n uint64) ([]byte, error) {
-	if n > uint64(len(d.data)-d.off) {
+	rem := len(d.data) - d.off // never negative: off only advances within data
+	if n > uint64(rem) {       //nolint:gosec // rem >= 0
 		return nil, d.fail(start, ErrUnexpectedEOF, fmt.Sprintf("string of length %d exceeds remaining input", n))
 	}
-	b := d.data[d.off : d.off+int(n)]
-	d.off += int(n)
+	size := int(n) //nolint:gosec // n <= rem, which is an int
+	b := d.data[d.off : d.off+size]
+	d.off += size
 	return b, nil
 }
 
@@ -302,10 +304,10 @@ func (d *decoder) array(start, depth int, n uint64, indef bool) (Value, error) {
 	}
 	// Every element needs at least one byte, so a declared count larger than
 	// the remaining input is malformed; checking first avoids a huge allocation.
-	if !indef && n > uint64(len(d.data)-d.off) {
+	if !indef && n > uint64(len(d.data)-d.off) { //nolint:gosec // remaining input length is >= 0
 		return Value{}, d.fail(start, ErrUnexpectedEOF, fmt.Sprintf("array of %d items exceeds remaining input", n))
 	}
-	items := make([]Value, 0, int(n))
+	items := make([]Value, 0, int(n)) //nolint:gosec // n is bounded by the input length above
 	for i := uint64(0); indef || i < n; i++ {
 		if indef {
 			done, err := d.atBreak(start)
@@ -332,10 +334,10 @@ func (d *decoder) mapItem(start, depth int, n uint64, indef bool) (Value, error)
 	if indef && !d.opts.AllowIndefinite {
 		return Value{}, d.fail(start, ErrIndefiniteLength, "")
 	}
-	if !indef && n > uint64(len(d.data)-d.off)/2 {
+	if !indef && n > uint64(len(d.data)-d.off)/2 { //nolint:gosec // remaining input length is >= 0
 		return Value{}, d.fail(start, ErrUnexpectedEOF, fmt.Sprintf("map of %d entries exceeds remaining input", n))
 	}
-	pairs := make([]Pair, 0, int(n))
+	pairs := make([]Pair, 0, int(n)) //nolint:gosec // n is bounded by the input length above
 	for i := uint64(0); indef || i < n; i++ {
 		if indef {
 			done, err := d.atBreak(start)
@@ -383,9 +385,9 @@ func (d *decoder) simpleOrFloat(start int, ai byte, arg uint64, indef bool) (Val
 		}
 		return Value{kind: KindSimple, arg: arg}, nil
 	case ai == 25:
-		return Value{kind: KindFloat, f: halfToFloat64(uint16(arg))}, nil
+		return Value{kind: KindFloat, f: halfToFloat64(uint16(arg))}, nil //nolint:gosec // ai 25 carries a 2-byte argument
 	case ai == 26:
-		return Value{kind: KindFloat, f: float64(math.Float32frombits(uint32(arg)))}, nil
+		return Value{kind: KindFloat, f: float64(math.Float32frombits(uint32(arg)))}, nil //nolint:gosec // ai 26 carries a 4-byte argument
 	default: // 27
 		return Value{kind: KindFloat, f: math.Float64frombits(arg)}, nil
 	}

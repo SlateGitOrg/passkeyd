@@ -22,7 +22,7 @@ const (
 )
 
 type harness struct {
-	t      *testing.T
+	t      testing.TB
 	rp     *webauthn.RelyingParty
 	auth   *virtualauthn.Authenticator
 	client *virtualauthn.Client
@@ -31,7 +31,7 @@ type harness struct {
 	store  map[string]webauthn.Credential
 }
 
-func newHarness(t *testing.T, cfgMod func(*webauthn.Config), opts virtualauthn.Options) *harness {
+func newHarness(t testing.TB, cfgMod func(*webauthn.Config), opts virtualauthn.Options) *harness {
 	t.Helper()
 	h := &harness{
 		t:     t,
@@ -257,7 +257,9 @@ var (
 )
 
 func hookClientData(fn func(*webauthn.CollectedClientData)) func(*harness, *webauthn.CreationOptionsJSON, *webauthn.SessionData) {
-	return func(h *harness, _ *webauthn.CreationOptionsJSON, _ *webauthn.SessionData) { h.client.ClientDataHook = fn }
+	return func(h *harness, _ *webauthn.CreationOptionsJSON, _ *webauthn.SessionData) {
+		h.client.ClientDataHook = fn
+	}
 }
 
 func negativeCases() []negativeCase {
@@ -315,7 +317,9 @@ func negativeCases() []negativeCase {
 		regCase("get type in create", webauthn.CheckClientDataType, nil, none,
 			hookClientData(func(cd *webauthn.CollectedClientData) { cd.Type = webauthn.ClientDataGet }), nil),
 		regCase("different challenge", webauthn.CheckChallenge, nil, none,
-			hookClientData(func(cd *webauthn.CollectedClientData) { cd.Challenge = webauthn.EncodeURL([]byte("replayed-old-challenge")) }), nil),
+			hookClientData(func(cd *webauthn.CollectedClientData) {
+				cd.Challenge = webauthn.EncodeURL([]byte("replayed-old-challenge"))
+			}), nil),
 		regCase("padded challenge", webauthn.CheckChallenge, nil, none,
 			hookClientData(func(cd *webauthn.CollectedClientData) { cd.Challenge += "=" }), nil),
 		regCase("phishing origin", webauthn.CheckOrigin, nil, none,
@@ -430,14 +434,18 @@ func negativeCases() []negativeCase {
 				s.Algorithms = []cose.Algorithm{cose.AlgES256}
 			}, nil),
 		regCase("self attestation alg mismatch", webauthn.CheckAlgorithm, nil, self, nil,
-			editAttObj(func(_ *string, stmt *cbor.Value, _ *[]byte) { *stmt = stmtWith(*stmt, "alg", cbor.NewInt(int64(cose.AlgES384))) })),
+			editAttObj(func(_ *string, stmt *cbor.Value, _ *[]byte) {
+				*stmt = stmtWith(*stmt, "alg", cbor.NewInt(int64(cose.AlgES384)))
+			})),
 		regCase("unsupported x5c attestation alg", webauthn.CheckAlgorithm, nil, x5c, nil,
 			editAttObj(func(_ *string, stmt *cbor.Value, _ *[]byte) { *stmt = stmtWith(*stmt, "alg", cbor.NewInt(-65535)) })),
 		// --- attestation statement ---
 		regCase("unknown format", webauthn.CheckAttestationFormat, nil, none, nil,
 			editAttObj(func(f *string, _ *cbor.Value, _ *[]byte) { *f = "tpm" })),
 		regCase("ECDAA statement", webauthn.CheckAttestationFormat, nil, self, nil,
-			editAttObj(func(_ *string, stmt *cbor.Value, _ *[]byte) { *stmt = stmtWith(*stmt, "ecdaaKeyId", cbor.NewBytes([]byte{1})) })),
+			editAttObj(func(_ *string, stmt *cbor.Value, _ *[]byte) {
+				*stmt = stmtWith(*stmt, "ecdaaKeyId", cbor.NewBytes([]byte{1}))
+			})),
 		regCase("none with statement", webauthn.CheckAttestationStatement, nil, none, nil,
 			editAttObj(func(_ *string, stmt *cbor.Value, _ *[]byte) { *stmt = stmtWith(*stmt, "sig", cbor.NewBytes([]byte{1})) })),
 		regCase("packed without sig", webauthn.CheckAttestationStatement, nil, self, nil,
@@ -512,11 +520,17 @@ func negativeCases() []negativeCase {
 				c.Attestation = &webauthn.AttestationPolicy{AllowBasic: true, RequireTrusted: true}
 			}, x5c, nil, nil),
 		regCase("none not allowed", webauthn.CheckAttestationPolicy,
-			func(c *webauthn.Config) { c.Attestation = &webauthn.AttestationPolicy{AllowSelf: true, AllowBasic: true} }, none, nil, nil),
+			func(c *webauthn.Config) {
+				c.Attestation = &webauthn.AttestationPolicy{AllowSelf: true, AllowBasic: true}
+			}, none, nil, nil),
 		regCase("self not allowed", webauthn.CheckAttestationPolicy,
-			func(c *webauthn.Config) { c.Attestation = &webauthn.AttestationPolicy{AllowNone: true, AllowBasic: true} }, self, nil, nil),
+			func(c *webauthn.Config) {
+				c.Attestation = &webauthn.AttestationPolicy{AllowNone: true, AllowBasic: true}
+			}, self, nil, nil),
 		regCase("basic not allowed", webauthn.CheckAttestationPolicy,
-			func(c *webauthn.Config) { c.Attestation = &webauthn.AttestationPolicy{AllowNone: true, AllowSelf: true} }, x5c, nil, nil),
+			func(c *webauthn.Config) {
+				c.Attestation = &webauthn.AttestationPolicy{AllowNone: true, AllowSelf: true}
+			}, x5c, nil, nil),
 		// --- uniqueness ---
 		{"credential ID already registered", webauthn.CheckCredentialUnique, func(t *testing.T) error {
 			h := newHarness(t, nil, none)
@@ -542,7 +556,7 @@ func negativeCases() []negativeCase {
 		// --- authentication ---
 		loginCase("credential outside allowCredentials", webauthn.CheckCredentialAllowed, nil, none,
 			func(t *testing.T, h *harness, _ *webauthn.Credential, o *webauthn.RequestOptionsJSON, _ *webauthn.SessionData) *webauthn.AuthenticationResponseJSON {
-				h.register() // a second credential, newer than the allowed one
+				h.register()             // a second credential, newer than the allowed one
 				o.AllowCredentials = nil // client ignores the allow list and picks the newest
 				return h.get(o)
 			}),

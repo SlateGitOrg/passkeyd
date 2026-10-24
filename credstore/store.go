@@ -224,6 +224,7 @@ func (s *Store) UserByHandle(ctx context.Context, handle []byte) (*User, error) 
 	return scanUser(s.db.QueryRowContext(ctx, `SELECT `+userCols+` FROM users WHERE handle = ?`, handle))
 }
 
+//nolint:gosec // G101: a column list, not a credential
 const credCols = `id, user_handle, public_key, alg, sign_count, uv_initialized, backup_eligible, backup_state,
 	transports, aaguid, attestation_format, attestation_type, attestation_trusted, clone_warning, created_at, last_used_at`
 

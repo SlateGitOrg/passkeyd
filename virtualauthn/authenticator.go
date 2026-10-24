@@ -298,7 +298,7 @@ func (a *Authenticator) MakeCredential(rpID string, userHandle, clientDataHash [
 	ad = append(ad, a.flags(true))
 	ad = binary.BigEndian.AppendUint32(ad, cred.counter)
 	ad = append(ad, a.opts.AAGUID[:]...)
-	ad = binary.BigEndian.AppendUint16(ad, uint16(len(id)))
+	ad = binary.BigEndian.AppendUint16(ad, uint16(len(id))) //nolint:gosec // id is 32 bytes
 	ad = append(ad, id...)
 	ad = append(ad, coseKey...)
 	if a.opts.AuthDataHook != nil {

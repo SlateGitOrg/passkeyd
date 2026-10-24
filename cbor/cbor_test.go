@@ -360,9 +360,9 @@ func TestEncodeEdgeCases(t *testing.T) {
 		v    Value
 		want string
 	}{
-		{NewSimple(25), "f7"},          // ill-formed simple falls back to undefined
-		{Value{}, "f7"},                // invalid value
-		{NewSimple(200), "f8c8"},       // two-byte simple
+		{NewSimple(25), "f7"},    // ill-formed simple falls back to undefined
+		{Value{}, "f7"},          // invalid value
+		{NewSimple(200), "f8c8"}, // two-byte simple
 		{NewFloat(math.NaN()), "f97e00"},
 		{NewFloat(math.Inf(-1)), "f9fc00"},
 		{NewFloat(math.Copysign(0, -1)), "f98000"},

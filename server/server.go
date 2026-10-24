@@ -363,7 +363,9 @@ func (s *Server) startCeremony(w http.ResponseWriter, p pending) bool {
 		s.internal(w, "store ceremony", err)
 		return false
 	}
-	http.SetCookie(w, &http.Cookie{
+	// Secure is configurable only so http://localhost development works;
+	// the CLI enables it whenever an https origin is configured.
+	http.SetCookie(w, &http.Cookie{ //nolint:gosec // G124: see comment above
 		// MaxAge (relative) rather than Expires (absolute) so client clock
 		// skew cannot drop or extend the cookie; the server-side entry
 		// enforces the real deadline.
@@ -381,7 +383,8 @@ func (s *Server) takeCeremony(w http.ResponseWriter, r *http.Request) (pending, 
 		writeError(w, http.StatusBadRequest, string(webauthn.CheckSession), "no ceremony in progress")
 		return pending{}, false
 	}
-	http.SetCookie(w, &http.Cookie{Name: CeremonyCookie, Value: "", Path: "/api/", MaxAge: -1, HttpOnly: true, Secure: s.secure, SameSite: http.SameSiteStrictMode})
+	http.SetCookie(w, &http.Cookie{Name: CeremonyCookie, Value: "", Path: "/api/", MaxAge: -1, //nolint:gosec // G124: clearing cookie, same attributes as above
+		HttpOnly: true, Secure: s.secure, SameSite: http.SameSiteStrictMode})
 	p, err := s.pending.Take(c.Value)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, string(webauthn.CheckSession), "ceremony expired or already completed")

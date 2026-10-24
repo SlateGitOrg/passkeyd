@@ -88,7 +88,7 @@ func NewInt(i int64) Value {
 		return Value{kind: KindUint, arg: uint64(i)}
 	}
 	// -1-n = i  =>  n = -1-i, computed without overflow for math.MinInt64.
-	return Value{kind: KindNegInt, arg: uint64(-(i + 1))}
+	return Value{kind: KindNegInt, arg: uint64(-(i + 1))} //nolint:gosec // i < 0, so -(i+1) is in [0, MaxInt64]
 }
 
 // NewNegInt returns the negative integer -1-n. It can represent values below
