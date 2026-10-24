@@ -1,0 +1,52 @@
+# Decisions
+
+Each ruling below gives the decision, the reason for it, and what it costs if
+it turns out to be wrong.
+
+## Parsing and cryptography
+
+- Ruling: CBOR, COSE and every WebAuthn check are implemented in this repository. The only third-party module is the SQLite driver — the brief requires in-repo CBOR/COSE parsing, and owning the parsers makes the attack surface reviewable — cost if wrong: more code to maintain than a mature library, and parser bugs are ours to find (mitigated by spec vectors and fuzzing).
+- Ruling: the WebAuthn CBOR profile (`cbor.StrictOptions`) rejects duplicate keys, indefinite lengths, trailing bytes and invalid UTF-8, and enforces depth and item limits. It does not enforce canonical key order or shortest-form arguments — duplicates and indefinite lengths are where ambiguity or resource abuse comes from, while clients are not required to re-canonicalize authenticator output — cost if wrong: some non-canonical encodings are accepted that an ultra-strict RP would refuse.
+- Ruling: duplicate-key detection switches from a linear scan to a hash set (keyed by preferred serialization) at 16 entries — a 64 KiB body can carry about 20k distinct keys, and an O(k²) scan would be a CPU denial-of-service vector — cost if wrong: a small allocation for large maps, which honest WebAuthn data never contains.
+- Ruling: `simple(24)` in the two-byte form is rejected even though the RFC 7049-era vector file lists it — RFC 8949 §3.3 made it ill-formed and RFC 8949 obsoletes 7049 — cost if wrong: none in practice; WebAuthn never uses simple values above 23.
+- Ruling: indefinite-length strings decode to their concatenated payload, and the chunk boundaries are not kept — WebAuthn never uses chunked strings, and keeping one representation per value keeps `Equal` simple — cost if wrong: `Diagnostic` output for chunked strings differs from the RFC's `(_ ...)` notation (noted in the test).
+- Ruling: ECDSA signatures must be ASN.1 DER — WebAuthn §6.5.6 specifies DER for ES* — cost if wrong: none for conforming authenticators; raw `r‖s` signatures fail.
+- Ruling: Ed448 is unsupported and reported as `algorithm_not_allowed` — the Go standard library has no Ed448 and third-party crypto was ruled out — cost if wrong: the rare Ed448 authenticator cannot register. The spec's Ed448 vector is asserted as "refused".
+- Ruling: COSE alg -19 (fully specified Ed25519) is accepted as a synonym for -8 — newer authenticators may emit it and it denotes the same scheme — cost if wrong: none known.
+- Ruling: RSA keys must have a 2048–8192-bit modulus and an odd exponent of at least 3, encoded in at most 4 bytes — this bounds verification cost and rejects weak keys — cost if wrong: unusual RSA authenticators with smaller keys cannot register.
+
+## Ceremony semantics
+
+- Ruling: an unknown attestation format (tpm, android-key, apple, fido-u2f, safetynet) is rejected rather than downgraded to `none` — §7.1 says verification fails for unsupported formats, and the default conveyance is `none`, so browsers normally send `none` anyway — cost if wrong: an RP that requests `direct` attestation will reject those authenticators until the formats are added (on the roadmap).
+- Ruling: by default (`PermissiveAttestation`), x5c attestation without configured trust anchors is accepted and recorded as `basic`, `trusted=false`. `RequireTrusted` is opt-in — consumer passkey deployments do not do attestation trust, and no FIDO MDS is consumed — cost if wrong: an operator who assumes "basic" means "verified" is misled. The `trusted` flag is stored and returned so that this is visible.
+- Ruling: Basic and AttCA attestation are both reported as `basic` — telling them apart needs authenticator metadata — cost if wrong: coarser reporting only.
+- Ruling: an attestation certificate without a Basic Constraints extension is accepted, and only `CA=true` is rejected — RFC 5280 treats an absent extension as "not a CA", and some vendor certificates omit it — cost if wrong: a slightly looser reading of §8.2.1.
+- Ruling: unknown members in a packed `attStmt` are rejected, and `ecdaaKeyId` is reported as an unsupported format — the packed syntax is fixed and ECDAA was removed from the spec — cost if wrong: a future spec extension member would be rejected until it is supported.
+- Ruling: a counter regression defaults to rejecting the login (`CloneReject`), and the server also marks the credential `clone_warning=1`. A counter of 0 on both sides is never treated as a clone signal — the spec leaves the response to the RP, rejection is the conservative choice, and 0/0 is how authenticators without counters behave — cost if wrong: a legitimate authenticator with a buggy counter locks its user out until an operator intervenes (`-clone-policy flag` is available).
+- Ruling: `crossOrigin: true` without `topOrigin` is accepted when cross-origin is enabled — older browsers omit `topOrigin` — cost if wrong: operators who enable cross-origin trust any embedder from such browsers.
+- Ruling: authenticator extension outputs are parsed for well-formedness and kept, but not interpreted. No extensions are requested — v1 needs none — cost if wrong: features like `credProps` or `prf` need follow-up work.
+- Ruling: `tokenBinding` is ignored — it was removed in Level 3 — cost if wrong: none for current browsers.
+- Ruling: session expiry is checked twice, by the challenge store TTL and by `SessionData.Expires` in the RP — defense in depth, and the library stays safe when used with another store — cost if wrong: none.
+- Ruling: RP config rejects origins that are not on the RP ID or a subdomain of it, origins with a path or trailing slash, and plain http anywhere except localhost. Non-web origins such as `android:apk-key-hash:` are accepted verbatim — misconfiguration is a common source of phishing exposure — cost if wrong: unusual setups (for example a related-origins deployment) need code changes.
+
+## Server and storage
+
+- Ruling: the challenge store lives in process memory, so the demo server is single-node — this keeps the scope reasonable, and credentials, which do need durability, are in SQLite — cost if wrong: ceremonies in flight are lost on restart, and multiple replicas would need a shared store.
+- Ruling: when the challenge store is full it rejects new ceremonies (503) rather than evicting existing ones — eviction would let a flood silently cancel legitimate in-flight logins, while rejection is visible and bounded by the per-IP limiter — cost if wrong: a distributed flood can block new sign-ins for up to one TTL.
+- Ruling: the ceremony cookie uses `MaxAge` (relative) rather than `Expires` — client clock skew could otherwise drop the cookie at once — cost if wrong: none; the server-side deadline is what is enforced.
+- Ruling: login options for an unknown username are answered like a discoverable login — this avoids account enumeration on the login path — cost if wrong: registration still reveals that a username is taken (documented as a residual risk).
+- Ruling: the HTTP server only creates new accounts with their first passkey. Adding passkeys to an existing account needs an authenticated session, which is out of scope for v1. The library itself supports many credentials per user — cost if wrong: the demo server is limited to one passkey per account.
+- Ruling: no login session or token is issued after a successful assertion — the project is the RP verification core, not a session framework — cost if wrong: the demo shows verification results, not a persistent logged-in state.
+- Ruling: user handles are 32 random bytes and never derived from the username — the spec's privacy guidance on user handle contents — cost if wrong: none.
+- Ruling: the rate limiter keys on the TCP peer IP and ignores `X-Forwarded-For` — that header is client-controlled unless a trusted proxy rewrites it — cost if wrong: behind a proxy, all clients share one bucket.
+- Ruling: modernc.org/sqlite v1.60.0 (pure Go, released 2026-09-28) instead of mattn/go-sqlite3 — no cgo means simple cross-builds and CI, and the version is pinned and more than two weeks old — cost if wrong: somewhat slower than the C library; irrelevant at this scale.
+- Ruling: after a successful verification, a failed counter compare-and-swap returns 409 `concurrent_login` and does not log the user in — two logins that verified against the same stored counter cannot both be valid — cost if wrong: a rare false failure under real concurrency; the user retries.
+
+## Testing and tooling
+
+- Ruling: the spec vectors come from the W3C editor's draft (WebAuthn L3 §16), fetched on 2026-10-24, extracted by `scripts/extract_vectors.py` and frozen as JSON in `testdata/` — the published TR may lag the draft, and freezing keeps the tests offline and deterministic — cost if wrong: if the draft changes its vectors, the committed copy diverges; DATA.md records the source checksum.
+- Ruling: the CBOR examples come from the `cbor/test-vectors` repository's `appendix_a.json`, which reproduces RFC 7049 Appendix A — it is machine-readable, and its content is the RFC's examples — cost if wrong: that repository has no LICENSE file; if this matters, the file can be regenerated from the RFC text (see DATA.md).
+- Ruling: `virtualauthn` is a public package rather than `internal/` — downstream services can use it in their own integration tests — cost if wrong: someone might misuse it outside tests; the package documentation forbids that.
+- Ruling: the coverage gate is measured over the core library and server packages with `-coverpkg`, so tests in one package count for another, and the threshold is 80%. `cmd/` and `internal/` are tested but excluded from the gate — the gate should track the security-relevant code — cost if wrong: CLI regressions are caught only by their own tests, not by the threshold.
+- Ruling: hostile inputs in the tests are built by hooks on the virtual authenticator (`AuthDataHook`, `CertHook`, `ClientDataHook`), so that each response is validly signed but breaks exactly one rule — a check that is reached only through a broken signature proves nothing — cost if wrong: none; tests that tamper after signing (signature checks) are labelled as such.
+- Ruling: the Go toolchain is 1.27 (`go 1.27` in go.mod), and golangci-lint v2.13.2 is installed in CI with `go install` — this matches the build machine — cost if wrong: contributors on older Go need to upgrade.

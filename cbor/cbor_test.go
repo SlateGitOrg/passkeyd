@@ -40,8 +40,7 @@ func loadAppendixA(t *testing.T) []appendixVector {
 //
 // One example, f818 = simple(24), was valid under RFC 7049 but is not
 // well-formed under RFC 8949 section 3.3 (simple values below 32 must use the
-// one-byte form); RFC 8949 dropped it from its appendix and this decoder
-// rejects it.
+// one-byte form), so this decoder rejects it.
 func TestAppendixA(t *testing.T) {
 	vs := loadAppendixA(t)
 	if len(vs) != 82 {
