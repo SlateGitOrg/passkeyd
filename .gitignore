@@ -1,0 +1,16 @@
+# build output
+/bin/
+/dist/
+*.test
+*.out
+coverage.*
+# local databases
+*.db
+*.db-shm
+*.db-wal
+# env
+.env
+# editors / OS
+.DS_Store
+.idea/
+.vscode/
