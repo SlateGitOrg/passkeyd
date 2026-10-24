@@ -11,6 +11,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 )
 
 type appendixVector struct {
@@ -230,6 +231,32 @@ func TestDecodeErrors(t *testing.T) {
 				t.Fatalf("error %T is not a *DecodeError", err)
 			}
 		})
+	}
+}
+
+// TestLargeMapDuplicateDetection covers the hash-set path: a map with many
+// distinct keys decodes in linear time, and a duplicate far into the map —
+// including one written in a non-shortest form — is still caught.
+func TestLargeMapDuplicateDetection(t *testing.T) {
+	const n = 20000
+	build := func(extra []byte) []byte {
+		buf := []byte{0xb9, byte((n + len(extra)/3) >> 8), byte(n + len(extra)/3)}
+		for i := range n {
+			buf = append(buf, 0x19, byte(i>>8), byte(i), 0x00)
+		}
+		return append(buf, extra...)
+	}
+	start := time.Now()
+	v, err := Decode(build(nil))
+	if err != nil || v.Len() != n {
+		t.Fatalf("len %d err %v", v.Len(), err)
+	}
+	if d := time.Since(start); d > 2*time.Second {
+		t.Fatalf("decoding %d distinct keys took %v", n, d)
+	}
+	// Key 5 again, encoded as a 1-byte argument (18 05) instead of 05.
+	if _, err := Decode(build([]byte{0x18, 0x05, 0x00})); !errors.Is(err, ErrDuplicateKey) {
+		t.Fatalf("got %v", err)
 	}
 }
 

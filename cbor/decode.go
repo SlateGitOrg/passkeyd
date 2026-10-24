@@ -338,6 +338,7 @@ func (d *decoder) mapItem(start, depth int, n uint64, indef bool) (Value, error)
 		return Value{}, d.fail(start, ErrUnexpectedEOF, fmt.Sprintf("map of %d entries exceeds remaining input", n))
 	}
 	pairs := make([]Pair, 0, int(n)) //nolint:gosec // n is bounded by the input length above
+	var seen keySet
 	for i := uint64(0); indef || i < n; i++ {
 		if indef {
 			done, err := d.atBreak(start)
@@ -360,12 +361,8 @@ func (d *decoder) mapItem(start, depth int, n uint64, indef bool) (Value, error)
 		if d.opts.Canonical && len(pairs) > 0 && canonicalCompare(k.raw, pairs[len(pairs)-1].Key.raw) <= 0 {
 			return Value{}, d.fail(keyStart, ErrNonCanonical, "map keys not in canonical order")
 		}
-		if !d.opts.AllowDuplicateKeys {
-			for _, p := range pairs {
-				if Equal(p.Key, k) {
-					return Value{}, d.fail(keyStart, ErrDuplicateKey, "")
-				}
-			}
+		if !d.opts.AllowDuplicateKeys && seen.add(pairs, k) {
+			return Value{}, d.fail(keyStart, ErrDuplicateKey, "")
 		}
 		pairs = append(pairs, Pair{Key: k, Value: val})
 	}
@@ -414,4 +411,38 @@ func halfToFloat64(h uint16) float64 {
 		return -val
 	}
 	return val
+}
+
+// smallMapScan is the map size up to which duplicate detection scans
+// linearly; larger maps switch to a hash set so a hostile map of many
+// distinct keys costs O(k) rather than O(k^2).
+const smallMapScan = 16
+
+// keySet detects duplicate map keys. Keys are compared by their preferred
+// serialization, which is equal exactly when Equal reports equality (it
+// normalizes argument widths and indefinite lengths).
+type keySet struct{ set map[string]struct{} }
+
+// add reports whether k duplicates a key already in pairs, recording it.
+func (s *keySet) add(pairs []Pair, k Value) bool {
+	if s.set == nil {
+		if len(pairs) < smallMapScan {
+			for _, p := range pairs {
+				if Equal(p.Key, k) {
+					return true
+				}
+			}
+			return false
+		}
+		s.set = make(map[string]struct{}, 2*len(pairs))
+		for _, p := range pairs {
+			s.set[string(Encode(p.Key))] = struct{}{}
+		}
+	}
+	enc := string(Encode(k))
+	if _, dup := s.set[enc]; dup {
+		return true
+	}
+	s.set[enc] = struct{}{}
+	return false
 }
