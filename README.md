@@ -215,7 +215,7 @@ The full list, with what each choice costs if it is wrong, is in [DECISIONS.md](
 | CBOR examples | `go test -run TestAppendixA ./cbor/` | 82 of 82 handled (81 decoded and compared, plus `simple(24)` rejected per RFC 8949) |
 | Negative checks | `go test -run 'TestNegativeChecks\|TestEveryCheck' ./webauthn/` | 84 hostile cases covering all 34 checks |
 | Fuzzing | `make fuzz FUZZTIME=15s` | 4 targets, no failures. Execs in one 15 s run each: `FuzzDecode` 1.63M, `FuzzParseKey` 2.76M, `FuzzParseAuthenticatorData` 1.24M, `FuzzFinishRegistration` 1.04M |
-| Lines of code | `./scripts/loc.sh` | non-test Go: 5,387 lines (4,440 code). Tests: 3,265 lines. Static page: 204 lines |
+| Lines of code | `./scripts/loc.sh` | non-test Go: 5,387 lines (4,440 code). Tests: 3,264 lines. Static page: 204 lines |
 
 `make bench` on an Apple M1 Pro (darwin/arm64, Go 1.27.1). These are single runs, so treat the numbers as rough:
 
