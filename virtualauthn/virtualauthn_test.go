@@ -32,6 +32,13 @@ func TestErrors(t *testing.T) {
 	if _, err := a.MakeCredential("example.org", nil, nil, []cose.Algorithm{-65535}); !errors.Is(err, ErrUnsupportedAlgorithm) {
 		t.Fatal(err)
 	}
+	ed := New(Options{Algorithms: []cose.Algorithm{cose.AlgEdDSA}})
+	if c, err := ed.MakeCredential("example.org", nil, nil, []cose.Algorithm{cose.AlgES256, cose.AlgEdDSA}); err != nil || c.Algorithm != cose.AlgEdDSA {
+		t.Fatalf("restricted authenticator must pick EdDSA: %v", err)
+	}
+	if _, err := ed.MakeCredential("example.org", nil, nil, []cose.Algorithm{cose.AlgES256}); !errors.Is(err, ErrUnsupportedAlgorithm) {
+		t.Fatal(err)
+	}
 	if _, err := a.GetAssertion("example.org", nil, nil); !errors.Is(err, ErrNoCredential) {
 		t.Fatal(err)
 	}

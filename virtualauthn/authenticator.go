@@ -69,6 +69,9 @@ type Options struct {
 	// BackupEligible and BackupState set the BE and BS flags.
 	BackupEligible bool
 	BackupState    bool
+	// Algorithms restricts the authenticator to these algorithms. Default:
+	// ES256, EdDSA, ES384, ES512, RS256.
+	Algorithms []cose.Algorithm
 	// ZeroCounter keeps the signature counter at 0, as many synced passkey
 	// providers do.
 	ZeroCounter bool
@@ -263,7 +266,11 @@ type Credential struct {
 // using the first algorithm in algs that it supports, and returns the
 // attestation object over clientDataHash.
 func (a *Authenticator) MakeCredential(rpID string, userHandle, clientDataHash []byte, algs []cose.Algorithm) (*Credential, error) {
-	idx := slices.IndexFunc(algs, func(x cose.Algorithm) bool { return slices.Contains(supported, x) })
+	own := a.opts.Algorithms
+	if len(own) == 0 {
+		own = supported
+	}
+	idx := slices.IndexFunc(algs, func(x cose.Algorithm) bool { return slices.Contains(own, x) && slices.Contains(supported, x) })
 	if idx < 0 {
 		return nil, ErrUnsupportedAlgorithm
 	}
