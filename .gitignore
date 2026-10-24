@@ -3,7 +3,8 @@
 /dist/
 *.test
 *.out
-coverage.*
+/coverage.out
+/coverage.html
 # local databases
 *.db
 *.db-shm
