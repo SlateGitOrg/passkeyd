@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/archit2501/passkeyd/cose"
-	"github.com/archit2501/passkeyd/webauthn"
+	"github.com/SlateGitOrg/passkeyd/cose"
+	"github.com/SlateGitOrg/passkeyd/webauthn"
 )
 
 func open(t *testing.T) *Store {

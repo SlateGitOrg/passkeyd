@@ -8,7 +8,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/archit2501/passkeyd/internal/cli"
+	"github.com/SlateGitOrg/passkeyd/internal/cli"
 )
 
 func main() {

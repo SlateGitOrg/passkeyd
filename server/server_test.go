@@ -18,9 +18,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/archit2501/passkeyd/credstore"
-	"github.com/archit2501/passkeyd/virtualauthn"
-	"github.com/archit2501/passkeyd/webauthn"
+	"github.com/SlateGitOrg/passkeyd/credstore"
+	"github.com/SlateGitOrg/passkeyd/virtualauthn"
+	"github.com/SlateGitOrg/passkeyd/webauthn"
 )
 
 const testOrigin = "http://localhost:8080"

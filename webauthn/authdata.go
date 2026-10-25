@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/archit2501/passkeyd/cbor"
+	"github.com/SlateGitOrg/passkeyd/cbor"
 )
 
 // Flags is the authenticator data flags byte (WebAuthn section 6.1).

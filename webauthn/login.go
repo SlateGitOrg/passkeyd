@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"slices"
 
-	"github.com/archit2501/passkeyd/cose"
+	"github.com/SlateGitOrg/passkeyd/cose"
 )
 
 // BeginLogin starts an authentication ceremony. With a non-empty allow list

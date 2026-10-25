@@ -13,7 +13,7 @@ go test -count=1 -coverpkg="$core" -coverprofile="$profile" ./... >/dev/null
 go tool cover -func="$profile" | awk '
   /^total:/ { next }
   {
-    split($1, parts, "/"); pkg = parts[4];   # github.com/archit2501/passkeyd/<pkg>/file.go:line:
+    split($1, parts, "/"); pkg = parts[4];   # github.com/SlateGitOrg/passkeyd/<pkg>/file.go:line:
     sub(/%/, "", $NF); n[pkg]++; s[pkg] += $NF
   }
   END { for (p in n) printf "  %-14s %5.1f%% (mean of %d funcs)\n", p, s[p] / n[p], n[p] }' | sort

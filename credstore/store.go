@@ -15,8 +15,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/archit2501/passkeyd/cose"
-	"github.com/archit2501/passkeyd/webauthn"
+	"github.com/SlateGitOrg/passkeyd/cose"
+	"github.com/SlateGitOrg/passkeyd/webauthn"
 
 	_ "modernc.org/sqlite" // registers the "sqlite" driver
 )

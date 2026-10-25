@@ -7,7 +7,7 @@ import (
 	"slices"
 	"time"
 
-	"github.com/archit2501/passkeyd/cose"
+	"github.com/SlateGitOrg/passkeyd/cose"
 )
 
 // User is the account a credential is being registered for.

@@ -1,4 +1,4 @@
-module github.com/archit2501/passkeyd
+module github.com/SlateGitOrg/passkeyd
 
 go 1.27
 

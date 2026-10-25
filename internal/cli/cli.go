@@ -17,10 +17,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/archit2501/passkeyd/credstore"
-	"github.com/archit2501/passkeyd/internal/demo"
-	"github.com/archit2501/passkeyd/server"
-	"github.com/archit2501/passkeyd/webauthn"
+	"github.com/SlateGitOrg/passkeyd/credstore"
+	"github.com/SlateGitOrg/passkeyd/internal/demo"
+	"github.com/SlateGitOrg/passkeyd/server"
+	"github.com/SlateGitOrg/passkeyd/webauthn"
 )
 
 // Version is the release version, overridable with -ldflags.

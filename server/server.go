@@ -24,10 +24,10 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/archit2501/passkeyd/challenge"
-	"github.com/archit2501/passkeyd/credstore"
-	"github.com/archit2501/passkeyd/web"
-	"github.com/archit2501/passkeyd/webauthn"
+	"github.com/SlateGitOrg/passkeyd/challenge"
+	"github.com/SlateGitOrg/passkeyd/credstore"
+	"github.com/SlateGitOrg/passkeyd/web"
+	"github.com/SlateGitOrg/passkeyd/webauthn"
 )
 
 // CeremonyCookie names the cookie that carries the ceremony key.

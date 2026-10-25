@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/archit2501/passkeyd/cose"
-	"github.com/archit2501/passkeyd/webauthn"
+	"github.com/SlateGitOrg/passkeyd/cose"
+	"github.com/SlateGitOrg/passkeyd/webauthn"
 )
 
 // Client plays the browser's role: it builds clientDataJSON, calls the

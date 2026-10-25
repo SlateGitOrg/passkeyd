@@ -25,11 +25,11 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/archit2501/passkeyd/cose"
-	"github.com/archit2501/passkeyd/credstore"
-	"github.com/archit2501/passkeyd/server"
-	"github.com/archit2501/passkeyd/virtualauthn"
-	"github.com/archit2501/passkeyd/webauthn"
+	"github.com/SlateGitOrg/passkeyd/cose"
+	"github.com/SlateGitOrg/passkeyd/credstore"
+	"github.com/SlateGitOrg/passkeyd/server"
+	"github.com/SlateGitOrg/passkeyd/virtualauthn"
+	"github.com/SlateGitOrg/passkeyd/webauthn"
 )
 
 // Options configures a demo run.

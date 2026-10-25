@@ -3,9 +3,9 @@ package webauthn_test
 import (
 	"testing"
 
-	"github.com/archit2501/passkeyd/cose"
-	"github.com/archit2501/passkeyd/virtualauthn"
-	"github.com/archit2501/passkeyd/webauthn"
+	"github.com/SlateGitOrg/passkeyd/cose"
+	"github.com/SlateGitOrg/passkeyd/virtualauthn"
+	"github.com/SlateGitOrg/passkeyd/webauthn"
 )
 
 // benchRegistration measures FinishRegistration (client data, CBOR,

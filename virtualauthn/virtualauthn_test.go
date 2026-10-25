@@ -5,9 +5,9 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/archit2501/passkeyd/cbor"
-	"github.com/archit2501/passkeyd/cose"
-	"github.com/archit2501/passkeyd/webauthn"
+	"github.com/SlateGitOrg/passkeyd/cbor"
+	"github.com/SlateGitOrg/passkeyd/cose"
+	"github.com/SlateGitOrg/passkeyd/webauthn"
 )
 
 func TestMakeCredentialIsCanonicalCBOR(t *testing.T) {

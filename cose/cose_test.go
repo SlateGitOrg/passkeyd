@@ -12,7 +12,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/archit2501/passkeyd/cbor"
+	"github.com/SlateGitOrg/passkeyd/cbor"
 )
 
 func ecKey(t *testing.T, c elliptic.Curve) *ecdsa.PrivateKey {

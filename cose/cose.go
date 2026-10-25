@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/archit2501/passkeyd/cbor"
+	"github.com/SlateGitOrg/passkeyd/cbor"
 )
 
 // Algorithm is a COSE algorithm identifier.

@@ -19,7 +19,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/archit2501/passkeyd/cose"
+	"github.com/SlateGitOrg/passkeyd/cose"
 )
 
 // ClonePolicy decides what happens when a signature counter goes backwards.

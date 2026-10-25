@@ -7,8 +7,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/archit2501/passkeyd/cbor"
-	"github.com/archit2501/passkeyd/cose"
+	"github.com/SlateGitOrg/passkeyd/cbor"
+	"github.com/SlateGitOrg/passkeyd/cose"
 )
 
 // AttestationType classifies the attestation a credential was registered with.

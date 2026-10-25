@@ -33,8 +33,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/archit2501/passkeyd/cbor"
-	"github.com/archit2501/passkeyd/cose"
+	"github.com/SlateGitOrg/passkeyd/cbor"
+	"github.com/SlateGitOrg/passkeyd/cose"
 )
 
 // AttestationMode selects the attestation statement format.

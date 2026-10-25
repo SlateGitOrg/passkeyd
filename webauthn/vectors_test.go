@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/archit2501/passkeyd/cose"
+	"github.com/SlateGitOrg/passkeyd/cose"
 )
 
 type specVectors struct {
